@@ -95,11 +95,11 @@ class AntColonyOptimizer:
 
 def main():
     # Read the scheduling information from a file
-    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/U_3_1000_25_9.txt'  # Replace with the path to your file
+    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/NU_1_0010_05_2.txt'  # Replace with the path to your file
     num_machines, num_jobs, processing_times = read_schedule_file(filename)
 
     # Initialize the ACO with a random initial solution
-    aco = AntColonyOptimizer(num_machines, num_jobs, processing_times, num_ants=20, num_iterations=100, alpha=1.0,
+    aco = AntColonyOptimizer(num_machines, num_jobs, processing_times, num_ants=200, num_iterations=200, alpha=1.0,
                              beta=2.0, evaporation_rate=0.3)
 
     # Run the optimization

@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def read_schedule_file(filename):
     with open(filename, 'r') as file:
         num_machines = int(file.readline().strip())
@@ -6,15 +9,25 @@ def read_schedule_file(filename):
     return num_machines, num_jobs, processing_times
 
 
-def greedy_scheduler(num_machines, processing_times):
+def modified_greedy_scheduler(num_machines, processing_times):
     num_jobs = len(processing_times)
 
     # Initialize the machines with empty job lists and makespan of zero
     machines = [[] for _ in range(num_machines)]
     machine_loads = [0] * num_machines
 
-    # Sort jobs by processing time in descending order
-    sorted_jobs = sorted(range(num_jobs), key=lambda x: processing_times[x], reverse=True)
+    # Shuffle the jobs and assign the first job randomly to each machine
+    job_list = list(range(num_jobs))
+    np.random.shuffle(job_list)
+
+    for i in range(num_machines):
+        if job_list:
+            first_job = job_list.pop(0)
+            machines[i].append(first_job)
+            machine_loads[i] += processing_times[first_job]
+
+    # Sort the remaining jobs by processing time in descending order
+    sorted_jobs = sorted(job_list, key=lambda x: processing_times[x], reverse=True)
 
     for job in sorted_jobs:
         # Find the machine with the least makespan
@@ -31,14 +44,14 @@ def greedy_scheduler(num_machines, processing_times):
 
 def main():
     # Read the scheduling information from a file
-    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/U_2_0500_25_9.txt'  # Replace with the path to your file
+    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/NU_1_0010_05_2.txt'  # Replace with the path to your file
     num_machines, num_jobs, processing_times = read_schedule_file(filename)
 
-    # Run the greedy scheduler
-    best_schedule, best_makespan = greedy_scheduler(num_machines, processing_times)
+    # Run the modified greedy scheduler
+    best_schedule, best_makespan = modified_greedy_scheduler(num_machines, processing_times)
 
-    print("Best Schedule (Greedy):", best_schedule)
-    print("Best Makespan (Greedy):", best_makespan)
+    print("Best Schedule (Modified Greedy):", best_schedule)
+    print("Best Makespan (Modified Greedy):", best_makespan)
 
 
 if __name__ == "__main__":
