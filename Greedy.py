@@ -1,4 +1,5 @@
 import numpy as np
+import glob
 
 
 def read_schedule_file(filename):
@@ -43,16 +44,25 @@ def modified_greedy_scheduler(num_machines, processing_times):
 
 
 def main():
-    # Read the scheduling information from a file
-    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/NU_1_0010_05_2.txt'  # Replace with the path to your file
-    num_machines, num_jobs, processing_times = read_schedule_file(filename)
+    # Path to the directory containing the schedule files
+    file_path_pattern = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/Big/*.txt'  # Update the path pattern as needed
 
-    # Run the modified greedy scheduler
-    best_schedule, best_makespan = modified_greedy_scheduler(num_machines, processing_times)
+    # Get the list of all files matching the pattern
+    schedule_files = glob.glob(file_path_pattern)
 
-    print("Best Schedule (Modified Greedy):", best_schedule)
-    print("Best Makespan (Modified Greedy):", best_makespan)
+    for filename in schedule_files:
+        print(f"Processing file: {filename}")
+
+        # Read the scheduling information from a file
+        num_machines, num_jobs, processing_times = read_schedule_file(filename)
+
+        # Run the modified greedy scheduler
+        best_schedule, best_makespan = modified_greedy_scheduler(num_machines, processing_times)
+
+        print(f"Best Schedule (Modified Greedy) for {filename}:", best_schedule)
+        print(f"Best Makespan (Modified Greedy) for {filename}:", best_makespan)
 
 
 if __name__ == "__main__":
     main()
+

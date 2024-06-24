@@ -1,4 +1,5 @@
 import numpy as np
+import glob
 
 
 def read_schedule_file(filename):
@@ -7,6 +8,39 @@ def read_schedule_file(filename):
         num_jobs = int(file.readline().strip())
         processing_times = list(map(int, file.readline().strip().split()))
     return num_machines, num_jobs, processing_times
+
+
+def modified_greedy_scheduler(num_machines, processing_times):
+    num_jobs = len(processing_times)
+
+    # Initialize the machines with empty job lists and makespan of zero
+    machines = [[] for _ in range(num_machines)]
+    machine_loads = [0] * num_machines
+
+    # Shuffle the jobs and assign the first job randomly to each machine
+    job_list = list(range(num_jobs))
+    np.random.shuffle(job_list)
+
+    for i in range(num_machines):
+        if job_list:
+            first_job = job_list.pop(0)
+            machines[i].append(first_job)
+            machine_loads[i] += processing_times[first_job]
+
+    # Sort the remaining jobs by processing time in descending order
+    sorted_jobs = sorted(job_list, key=lambda x: processing_times[x], reverse=True)
+
+    for job in sorted_jobs:
+        # Find the machine with the least makespan
+        least_loaded_machine = machine_loads.index(min(machine_loads))
+
+        # Assign the job to this machine
+        machines[least_loaded_machine].append(job)
+
+        # Update the load of this machine
+        machine_loads[least_loaded_machine] += processing_times[job]
+
+    return machines, max(machine_loads)
 
 
 class Ant:
@@ -21,7 +55,8 @@ class Ant:
         self.makespan = self._calculate_makespan()
 
     def _generate_schedule(self):
-        schedule, _ = greedy_scheduler(self.num_machines, self.processing_times)
+        # Use the modified greedy scheduler to generate the initial schedule
+        schedule, _ = modified_greedy_scheduler(self.num_machines, self.processing_times)
         return schedule
 
     def _calculate_probabilities(self, schedule, job):
@@ -34,8 +69,8 @@ class Ant:
 
         return probabilities
 
-    def _assign_job_to_machine(self, job):
-        probabilities = self._calculate_probabilities(self.schedule, job)
+    def _assign_job_to_machine(self, schedule, job):
+        probabilities = self._calculate_probabilities(schedule, job)
         chosen_machine = np.random.choice(self.num_machines, p=probabilities)
         return chosen_machine
 
@@ -85,53 +120,39 @@ class AntColonyOptimizer:
         return self.best_schedule, self.best_makespan
 
 
-def greedy_scheduler(num_machines, processing_times):
-    num_jobs = len(processing_times)
-
-    # Initialize the machines with empty job lists and makespan of zero
-    machines = [[] for _ in range(num_machines)]
-    machine_loads = [0] * num_machines
-
-    # Sort jobs by processing time in descending order
-    sorted_jobs = sorted(range(num_jobs), key=lambda x: processing_times[x], reverse=True)
-
-    for job in sorted_jobs:
-        # Find the machine with the least makespan
-        least_loaded_machine = machine_loads.index(min(machine_loads))
-
-        # Assign the job to this machine
-        machines[least_loaded_machine].append(job)
-
-        # Update the load of this machine
-        machine_loads[least_loaded_machine] += processing_times[job]
-
-    return machines, max(machine_loads)
-
-
 def main():
-    # Read the scheduling information from a file
-    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/U_3_1000_25_9.txt'  # Replace with the path to your file
-    num_machines, num_jobs, processing_times = read_schedule_file(filename)
+    # Path to the directory containing the schedule files
+    file_path_pattern = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/Big/*.txt'  # Update the path pattern as needed
 
-    # Run the greedy scheduler
-    initial_schedule, initial_makespan = greedy_scheduler(num_machines, processing_times)
+    # Get the list of all files matching the pattern
+    schedule_files = glob.glob(file_path_pattern)
 
-    print("Initial Schedule (Greedy):", initial_schedule)
-    print("Initial Makespan (Greedy):", initial_makespan)
+    for filename in schedule_files:
+        print(f"Processing file: {filename}")
 
-    # Initialize the ACO with the greedy solution
-    aco = AntColonyOptimizer(num_machines, num_jobs, processing_times, num_ants=20, num_iterations=100, alpha=1.0,
-                             beta=2.0, evaporation_rate=0.3)
-    aco.best_schedule = initial_schedule
-    aco.best_makespan = initial_makespan
+        # Read the scheduling information from a file
+        num_machines, num_jobs, processing_times = read_schedule_file(filename)
 
-    # Run the optimization
-    best_schedule, best_makespan = aco.optimize()
+        # Run the modified greedy scheduler
+        initial_schedule, initial_makespan = modified_greedy_scheduler(num_machines, processing_times)
 
-    print("Best Schedule (ACO):", best_schedule)
-    print("Best Makespan (ACO):", best_makespan)
+        print(f"Initial Schedule (Modified Greedy) for {filename}:", initial_schedule)
+        print(f"Initial Makespan (Modified Greedy) for {filename}:", initial_makespan)
+
+        # Initialize the ACO with the modified greedy solution
+        aco = AntColonyOptimizer(num_machines, num_jobs, processing_times, num_ants=500, num_iterations=200, alpha=1.0,
+                                 beta=1.0, evaporation_rate=0.3)
+        aco.best_schedule = initial_schedule
+        aco.best_makespan = initial_makespan
+
+        # Run the optimization
+        best_schedule, best_makespan = aco.optimize()
+
+        print(f"Best Schedule (ACO) for {filename}:", best_schedule)
+        print(f"Best Makespan (ACO) for {filename}:", best_makespan)
 
 
 if __name__ == "__main__":
     main()
+
 

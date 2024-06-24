@@ -1,5 +1,5 @@
 import numpy as np
-
+import glob
 
 def read_schedule_file(filename):
     with open(filename, 'r') as file:
@@ -7,7 +7,6 @@ def read_schedule_file(filename):
         num_jobs = int(file.readline().strip())
         processing_times = list(map(int, file.readline().strip().split()))
     return num_machines, num_jobs, processing_times
-
 
 class Ant:
     def __init__(self, num_jobs, num_machines, processing_times, pheromone, alpha, beta):
@@ -27,7 +26,7 @@ class Ant:
         np.random.shuffle(job_list)
 
         for job in job_list:
-            chosen_machine = self._assign_job_to_machine(schedule, job)
+            chosen_machine = np.random.choice(self.num_machines)
             schedule[chosen_machine].append(job)
 
         return schedule
@@ -51,10 +50,8 @@ class Ant:
         machine_loads = [sum(self.processing_times[job] for job in machine_jobs) for machine_jobs in self.schedule]
         return max(machine_loads)
 
-
 class AntColonyOptimizer:
-    def __init__(self, num_machines, num_jobs, processing_times, num_ants=10, num_iterations=100, alpha=1.0, beta=1.0,
-                 evaporation_rate=0.5):
+    def __init__(self, num_machines, num_jobs, processing_times, num_ants=500, num_iterations=200, alpha=1.0, beta=2.0, evaporation_rate=0.3):
         self.num_machines = num_machines
         self.num_jobs = num_jobs
         self.processing_times = processing_times
@@ -80,34 +77,38 @@ class AntColonyOptimizer:
 
     def optimize(self):
         for iteration in range(self.num_iterations):
-            ants = [Ant(self.num_jobs, self.num_machines, self.processing_times, self.pheromone, self.alpha, self.beta)
-                    for _ in range(self.num_ants)]
+            ants = [Ant(self.num_jobs, self.num_machines, self.processing_times, self.pheromone, self.alpha, self.beta) for _ in range(self.num_ants)]
             for ant in ants:
                 if ant.makespan < self.best_makespan:
                     self.best_makespan = ant.makespan
                     self.best_schedule = ant.schedule
 
             self._update_pheromones(ants)
-            print(f"Iteration {iteration + 1}/{self.num_iterations}, Best Makespan: {self.best_makespan}")
+            print(f"Iteration {iteration+1}/{self.num_iterations}, Best Makespan: {self.best_makespan}")
 
         return self.best_schedule, self.best_makespan
 
-
 def main():
-    # Read the scheduling information from a file
-    filename = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/INSTANCES/NU_1_0010_05_2.txt'  # Replace with the path to your file
-    num_machines, num_jobs, processing_times = read_schedule_file(filename)
+    # Path to the directory containing the schedule files
+    file_path_pattern = '/Users/paulinaheine/Codes/ACOPMS/Instances/cmax/Big/*.txt'  # Update the path pattern as needed
 
-    # Initialize the ACO with a random initial solution
-    aco = AntColonyOptimizer(num_machines, num_jobs, processing_times, num_ants=200, num_iterations=200, alpha=1.0,
-                             beta=2.0, evaporation_rate=0.3)
+    # Get the list of all files matching the pattern
+    schedule_files = glob.glob(file_path_pattern)
 
-    # Run the optimization
-    best_schedule, best_makespan = aco.optimize()
+    for filename in schedule_files:
+        print(f"Processing file: {filename}")
 
-    print("Best Schedule (ACO):", best_schedule)
-    print("Best Makespan (ACO):", best_makespan)
+        # Read the scheduling information from a file
+        num_machines, num_jobs, processing_times = read_schedule_file(filename)
 
+        # Initialize the ACO with a random initial schedule
+        aco = AntColonyOptimizer(num_machines, num_jobs, processing_times, num_ants=500, num_iterations=200, alpha=1.0, beta=1.0, evaporation_rate=0.3)
+
+        # Run the optimization
+        best_schedule, best_makespan = aco.optimize()
+
+        print(f"Best Schedule (ACO) for {filename}:", best_schedule)
+        print(f"Best Makespan (ACO) for {filename}:", best_makespan)
 
 if __name__ == "__main__":
     main()
